@@ -2,48 +2,48 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using TechExpertRef;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace ConsoleApp1
 {
-
-
     class Program
     {
-
         static async Task Main(string[] args)
         {
             string text = "гражданский кодекс";
-            string url2 = "http://192.168.0.14:81/kodeks/bparser?parse=" + Uri.EscapeDataString(text);
-            string url = "http://192.168.0.14:81/docs/api";
+            string url = "http://192.168.0.14:81/kodeks/bparser?parse=" + Uri.EscapeDataString(text);
 
-
-            using (HttpClient httpclient = new HttpClient())
+            try
             {
-                try
+                using (HttpClient httpclient = new HttpClient())
                 {
-                    HttpResponseMessage response = await httpclient.GetAsync(url2);
+                    HttpResponseMessage response = await httpclient.GetAsync(url);
                     response.EnsureSuccessStatusCode();
                     string bparserResult = await response.Content.ReadAsStringAsync();
 
-                    var client2 = new apiSoapClient();
-                    client2.Endpoint.EndpointBehaviors.Add(new CustomBehavior());
+                    var client = new apiSoapClient();
+                    client.Endpoint.EndpointBehaviors.Add(new CustomBehavior());
 
-                    var resz = client2.FuzzySearch("гражданский кодекс", null, 0, "searchbynames", bparserResult);
+                    var fuzzySearchRequest = new FuzzySearchRequest("гражданский кодекс", null, 0, "searchbynames", bparserResult);
+                    var resFuzzySearch = await client.FuzzySearchAsync(fuzzySearchRequest);
 
-                    var req3 = new GetDocsInfoRequest("901714421", "1");
-                    Console.WriteLine();
-                    var resp3 = client2.GetDocsInfo(req3);
+                    var getDocsInfoRequest = new GetDocsInfoRequest("901714421", "1");
+                    var resGetDocsInfo = await client.GetDocsInfoAsync(getDocsInfoRequest);
+                    // сервер возвращает:
+                    //<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope">
+                    //   <env:Body>
+                    //      <env:Fault>
+                    //         <faultcode>env:Server</faultcode>
+                    //         <faultstring>No license for attributes functions</faultstring>
+                    //      </env:Fault>
+                    //   </env:Body>
+                    //</env:Envelope>
                 }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine($"Ошибка запроса: {e.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка запроса: {ex.Message}");
             }
         }
     }
-
 }
 
